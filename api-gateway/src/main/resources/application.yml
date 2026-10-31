@@ -1,0 +1,95 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: API-GATEWAY
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/admin/**
+            - id: event-service
+              uri: lb://event-show-service
+              predicates:
+                - Path=/api/v1/events/**,/api/v1/shows/**,/api/v1/venues/**,/api/v1/screens/**,/api/v1/locations/**,/api/v1/seats/**,/api/v1/enums/**
+            - id: booking-service
+              uri: lb://booking-service
+              predicates:
+                - Path=/api/v1/bookings/**,/api/v1/booking/**
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/payments/**,/checkout-test.html
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/notifications/**,/api/v1/notifications/**
+            - id: auth-service-docs
+              uri: lb://auth-service
+              predicates:
+                - Path=/v3/api-docs/auth/**
+              filters:
+                - RewritePath=/v3/api-docs/auth(?<segment>.*), /v3/api-docs${segment}
+            - id: event-service-docs
+              uri: lb://event-show-service
+              predicates:
+                - Path=/v3/api-docs/event/**
+              filters:
+                - RewritePath=/v3/api-docs/event(?<segment>.*), /v3/api-docs${segment}
+            - id: booking-service-docs
+              uri: lb://booking-service
+              predicates:
+                - Path=/v3/api-docs/booking/**
+              filters:
+                - RewritePath=/v3/api-docs/booking(?<segment>.*), /v3/api-docs${segment}
+            - id: payment-service-docs
+              uri: lb://payment-service
+              predicates:
+                - Path=/v3/api-docs/payment/**
+              filters:
+                - RewritePath=/v3/api-docs/payment(?<segment>.*), /v3/api-docs${segment}
+            - id: notification-service-docs
+              uri: lb://notification-service
+              predicates:
+                - Path=/v3/api-docs/notification/**
+              filters:
+                - RewritePath=/v3/api-docs/notification(?<segment>.*), /v3/api-docs${segment}
+          metrics:
+            enabled: true
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    urls:
+      - name: 1. Auth Service
+        url: /v3/api-docs/auth
+      - name: 2. Event & Show Service
+        url: /v3/api-docs/event
+      - name: 3. Booking Service
+        url: /v3/api-docs/booking
+      - name: 4. Payment Service
+        url: /v3/api-docs/payment
+      - name: 5. Notification Service
+        url: /v3/api-docs/notification
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+security:
+  jwt:
+    secret: ${JWT_SECRET:TicketHub-Phase1-Shared-JWT-Secret-Change-In-Production-12345678901234567890}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,metrics,prometheus

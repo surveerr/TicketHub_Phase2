@@ -1,0 +1,128 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: payment-service
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://mysql:3306/payment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: payment-saga-compensation-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+kafka:
+  topic:
+    payment-succeeded: ${PAYMENT_SUCCEEDED_TOPIC:tickethub.payment.succeeded}
+    payment-failed: ${PAYMENT_FAILED_TOPIC:tickethub.payment.failed}
+    payment-refunded: ${PAYMENT_REFUNDED_TOPIC:tickethub.payment.refunded}
+    booking-rejected: ${BOOKING_REJECTED_TOPIC:tickethub.booking.rejected}
+    booking-cancelled: ${BOOKING_CANCELLED_TOPIC:tickethub.booking.cancelled}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:TicketHub-Phase1-Shared-JWT-Secret-Change-In-Production-12345678901234567890}
+
+  internal-jwt-secret: ${INTERNAL_JWT_SECRET:TicketHub-Phase1-Internal-Service-Secret-Change-In-Production-12345678901234567890}
+
+payment:
+  default-currency: INR
+  max-failed-attempts: 1
+
+  provider:
+    name: ${PAYMENT_PROVIDER:RAZORPAY}          # MOCK (default, no keys needed) or RAZORPAY -> set PAYMENT_PROVIDER=RAZORPAY + the two keys below
+    key-id: ${RAZORPAY_KEY_ID:rzp_test_TkaDeMgBRtRwVp}
+    key-secret: ${RAZORPAY_KEY_SECRET:CrimlcgUodHiDV067YR6cth5}
+    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:@paymentservice}
+    timeout-ms: 5000
+    mock-latency-ms: ${MOCK_PROVIDER_LATENCY_MS:0}
+
+  reconciliation:
+    interval-ms: 60000
+    pending-threshold-minutes: 5
+    expire-minutes: 30
+
+booking:
+  client:
+    name: ${BOOKING_CLIENT:REST}
+
+  service:
+    name: booking-service
+    base-url: ${BOOKING_SERVICE_URL:http://localhost:8082}
+    connect-timeout-ms: 1000
+    read-timeout-ms: 3000
+
+resilience4j:
+  retry:
+    instances:
+      bookingRead:
+        max-attempts: 3
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - com.tickethub.paymentservice.exception.BookingServiceUnavailableException
+
+  circuitbreaker:
+    instances:
+      bookingService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        ignore-exceptions:
+          - com.tickethub.paymentservice.exception.BookingNotFoundException
+
+      paymentProvider:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+    register-with-eureka: true
+    fetch-registry: true
+
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,metrics,prometheus
+
+logging:
+  level:
+    com.tickethub: INFO

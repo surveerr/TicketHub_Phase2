@@ -1,0 +1,5 @@
+package com.tickethub.booking.controller;
+import com.tickethub.booking.dto.request.PaymentResultRequest; import com.tickethub.booking.dto.response.BookingResponse; import com.tickethub.booking.service.BookingService; import jakarta.validation.Valid; import org.springframework.http.HttpStatus; import org.springframework.web.bind.annotation.*;
+@RestController @RequestMapping("/internal/v1/bookings") public class InternalBookingController {private final BookingService service;public InternalBookingController(BookingService s){service=s;}
+ @GetMapping("/{id}") public BookingResponse get(@PathVariable("id") Long id){return service.getInternal(id);} @PostMapping("/{id}/payment-result") @ResponseStatus(HttpStatus.NO_CONTENT) public void paymentResult(@PathVariable("id") Long id,@Valid @RequestBody PaymentResultRequest r){service.paymentResult(id,r);} @GetMapping("/show/{showId}/reserved-seats") public java.util.List<Long> reservedSeats(@PathVariable("showId") Long showId){return service.reservedSeats(showId);}
+}

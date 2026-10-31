@@ -1,0 +1,78 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none            # schema is managed by Flyway (db/migration)
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    baseline-on-migrate: true   # lets Flyway adopt an existing non-empty auth_db that has no flyway_schema_history yet
+    baseline-version: 0         # so V1 and V2 still run (they are idempotent: IF NOT EXISTS / INSERT IGNORE)
+
+auth:
+  jwt:
+    # MUST be identical to security.jwt.secret in api-gateway, event, booking and payment services
+    # (they all validate the access tokens issued here).
+    # Local default only - in a real environment this comes from a secret manager / env var.
+    secret: ${JWT_SECRET:TicketHub-Phase1-Shared-JWT-Secret-Change-In-Production-12345678901234567890}
+    issuer: tickethub-auth-service
+    access-token-ttl-minutes: ${JWT_ACCESS_TTL_MINUTES:15}
+    refresh-token-ttl-days: ${JWT_REFRESH_TTL_DAYS:7}
+  security:
+    max-failed-attempts: 5                 # failed logins before the account is locked
+    lock-duration-minutes: 15
+    require-email-verification: ${REQUIRE_EMAIL_VERIFICATION:false}   # true = login refused until email is verified
+    password-reset-ttl-minutes: 30
+    email-verification-ttl-hours: 24
+    bcrypt-strength: 12
+  rate-limit:                              # per client IP + endpoint (login, register, forgot/reset password, ...)
+    enabled: true
+    max-requests: 10
+    window-seconds: 60
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:3000}   # used to build links in verification / reset emails
+  bootstrap-admin:                         # first admin account, created on startup if missing
+    enabled: ${BOOTSTRAP_ADMIN_ENABLED:true}
+    email: ${ADMIN_EMAIL:admin@tickethub.local}
+    password: ${ADMIN_PASSWORD:Admin@12345}
+    first-name: Admin
+    last-name: TicketHub
+  cleanup-interval-ms: ${TOKEN_CLEANUP_MS:3600000}
+
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:true}        # set EUREKA_ENABLED=false to run without a Eureka server
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.tickethub: INFO

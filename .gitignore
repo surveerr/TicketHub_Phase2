@@ -1,0 +1,19 @@
+# Maven build output
+**/target/
+
+# Compiled files
+*.class
+*.jar
+*.war
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Environment and secrets
+.env
+.env.*
+!.env.example

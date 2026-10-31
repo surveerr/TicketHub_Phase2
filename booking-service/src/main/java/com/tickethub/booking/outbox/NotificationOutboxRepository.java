@@ -1,0 +1,11 @@
+package com.tickethub.booking.outbox;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.Instant;
+import java.util.List;
+
+public interface NotificationOutboxRepository extends JpaRepository<NotificationOutbox, Long> {
+
+    List<NotificationOutbox> findTop50ByStatusAndCreatedAtBeforeOrderByIdAsc(NotificationOutbox.Status status, Instant before);
+}

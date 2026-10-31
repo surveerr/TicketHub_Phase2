@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: event-show-service
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/event_db?createDatabaseIfNotExist=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        format_sql: true
+server:
+  port: 8081
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+  packages-to-scan: com.tickethub.eventshow.controller
+
+security:
+  jwt:
+    # V01 demo secret. In a real environment this comes from a secret manager/environment variable.
+    secret: ${JWT_SECRET:TicketHub-Phase1-Shared-JWT-Secret-Change-In-Production-12345678901234567890}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+  internal-jwt-secret: ${INTERNAL_JWT_SECRET:TicketHub-Phase1-Internal-Service-Secret-Change-In-Production-12345678901234567890}
+  admin:
+    # Static admin credentials for local/Postman testing only.
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD:admin123}
+
+tickethub:
+  seat-hold-expiry-ms: ${SEAT_HOLD_EXPIRY_CHECK_MS:30000}
+  show-status-check-ms: ${SHOW_STATUS_CHECK_MS:30000}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

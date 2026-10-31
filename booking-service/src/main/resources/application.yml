@@ -1,0 +1,73 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: booking-service
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/booking_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        max.block.ms: 3000          # if Kafka is down, fail fast instead of hanging the payment callback
+    consumer:
+      group-id: booking-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+services:
+  event:
+    base-url: ${EVENT_SERVICE_URL:http://localhost:8081}
+    # Local presentation default: call Event directly to avoid stale/duplicate Eureka instances.
+    use-eureka: ${EVENT_SERVICE_USE_EUREKA:false}
+security:
+  jwt:
+    secret: ${JWT_SECRET:TicketHub-Phase1-Shared-JWT-Secret-Change-In-Production-12345678901234567890}
+  internal-jwt-secret: ${INTERNAL_JWT_SECRET:TicketHub-Phase1-Internal-Service-Secret-Change-In-Production-12345678901234567890}
+booking:
+  hold-expiry-seconds: ${BOOKING_HOLD_EXPIRY_SECONDS:600}
+  expiry-check-ms: ${BOOKING_EXPIRY_CHECK_MS:30000}
+  outbox-relay-ms: ${BOOKING_OUTBOX_RELAY_MS:10000}
+  notification-zone: ${BOOKING_NOTIFICATION_ZONE:Asia/Kolkata}
+kafka:
+  topic:
+    booking-confirmed: ${BOOKING_CONFIRMED_TOPIC:tickethub.booking.confirmed}
+    payment-failed: ${PAYMENT_FAILED_TOPIC:tickethub.payment.failed}
+    booking-cancelled: ${BOOKING_CANCELLED_TOPIC:tickethub.booking.cancelled}
+    payment-succeeded: ${PAYMENT_SUCCEEDED_TOPIC:tickethub.payment.succeeded}
+    booking-rejected: ${BOOKING_REJECTED_TOPIC:tickethub.booking.rejected}
+    payment-refunded: ${PAYMENT_REFUNDED_TOPIC:tickethub.payment.refunded}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
